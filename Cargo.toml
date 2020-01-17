@@ -5,12 +5,20 @@ authors = ["Maciej Hirsz <hello@maciej.codes>"]
 edition = "2018"
 
 [dependencies]
-actix-rt = "1.0.0-alpha.3"
-actix-web = "2.0.0-alpha.4"
+actix-rt = "1.0.0"
+actix-web = "2.0.0"
 frame-system = { git = "https://github.com/paritytech/substrate/" }
-substrate-subxt = { git = "https://github.com/paritytech/substrate-subxt/" }
+pallet-indices = { git = "https://github.com/paritytech/substrate/" }
+serde = "1.0"
+serde_json = "1.0"
+# substrate-subxt = { git = "https://github.com/paritytech/substrate-subxt/" }
+substrate-subxt = { path = "../substrate-subxt" }
 sp-rpc = { git = "https://github.com/paritytech/substrate/" }
 sp-core = { git = "https://github.com/paritytech/substrate/" }
+sp-runtime = { git = "https://github.com/paritytech/substrate/" }
+sp-storage = { git = "https://github.com/paritytech/substrate/" }
 tokio = "0.1"
 url = "1.7"
 parking_lot = "0.10.0"
+futures = "0.1"
+futures-util = "0.3"
