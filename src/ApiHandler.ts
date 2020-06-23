@@ -20,10 +20,15 @@ import { Struct } from '@polkadot/types';
 import { getSpecTypes } from '@polkadot/types-known';
 import { GenericCall } from '@polkadot/types/generic';
 import { EventData } from '@polkadot/types/generic/Event';
-import { AccountId, DispatchInfo, EraIndex } from '@polkadot/types/interfaces';
+import {
+	AccountId,
+	DispatchInfo,
+	EraIndex,
+	Exposure,
+} from '@polkadot/types/interfaces';
 import { BlockHash } from '@polkadot/types/interfaces/chain';
 import { EventRecord } from '@polkadot/types/interfaces/system';
-import { u32 } from '@polkadot/types/primitive';
+import { StorageKey, u32 } from '@polkadot/types/primitive';
 import { Codec } from '@polkadot/types/types';
 import { u8aToHex } from '@polkadot/util';
 import { blake2AsU8a } from '@polkadot/util-crypto';
@@ -357,28 +362,18 @@ export default class ApiHandler {
 		const api = await this.ensureMeta(hash);
 
 		const [
-			currentEraOption,
 			validatorCount,
 			forceEra,
 			eraElectionStatus,
 			validators,
 			{ number },
 		] = await Promise.all([
-			await api.query.staking.currentEra.at(hash),
 			await api.query.staking.validatorCount.at(hash),
 			await api.query.staking.forceEra.at(hash),
 			await api.query.staking.eraElectionStatus.at(hash),
 			await api.query.session.validators.at(hash),
 			await api.rpc.chain.getHeader(hash),
 		]);
-
-		const currentEra = currentEraOption.unwrapOr(null);
-		// TODO comment nextElected logic
-		const nextElected = currentEra
-			? (await api.query.staking.erasStakers.keys(currentEra)).map(
-					(key) => key.args[1] as AccountId
-			  )
-			: null;
 
 		const {
 			eraLength,
@@ -387,6 +382,8 @@ export default class ApiHandler {
 			sessionProgress,
 			activeEra,
 		} = await this.deriveSessionAndEraProgress(api, hash);
+
+		const electedSet = await this.deriveElectedSet(api, hash, activeEra);
 
 		const unappliedSlashesAtActiveEra = activeEra
 			? await api.query.staking.unappliedSlashes.at(hash, activeEra)
@@ -438,7 +435,7 @@ export default class ApiHandler {
 				: validators.map((accountId) => accountId.toString()),
 			nextElected: forceEra.isForceNone
 				? null
-				: nextElected?.map((accountId) => accountId.toString()) ?? null,
+				: electedSet?.map((accountId) => accountId.toString()) ?? null,
 		};
 	}
 
@@ -800,7 +797,37 @@ export default class ApiHandler {
 		};
 	}
 
-	// TODO: a pr came out today making electionLookAhead exported, so look into querying for it directly
+	private async deriveElectedSet(
+		api: ApiPromise,
+		hash: BlockHash,
+		activeEra: EraIndex | BN,
+		historyDepth?: u32 | BN
+	): Promise<AccountId[] | null> {
+		const histDept =
+			historyDepth ??
+			(await api.query.staking.historyDepth.at(hash)) ??
+			new BN(84);
+
+		const { index: chainTipActiveEra } = (
+			await api.query.staking.activeEra()
+		).unwrapOrDefault();
+
+		const isNotAPrunedEra = activeEra > chainTipActiveEra.sub(histDept);
+
+		if (isNotAPrunedEra) {
+			return (
+				await api.query.staking.erasStakers.keys(
+					activeEra.add(new BN(1))
+				)
+			).map((key) => key.args[1] as AccountId);
+		}
+
+		// TODO, deal with historical query
+
+		return null;
+	}
+
+	// TODO: a pr merged 2020-22-6 making electionLookAhead exported, so look into querying for it directly
 	/**
 	 * Derive `electionLookAhead` based on the `specName` & `epochDuration`.
 	 * N.B. Values are hardcoded for `specName`s polkadot, kusama, and westend.

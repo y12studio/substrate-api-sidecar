@@ -249,7 +249,8 @@ async function main() {
 	//		not allowed because they would mutate the state that the
 	//		offchain phragmen rely on for calculating results.
 	// 		- toggle: **Upper bound estimate** of the block height at which the `status` will switch.
-	// - `validatorSet`: validators of the current session as an array of accountIds.
+	// - `validatorSet`: validator set of the current session.
+	// - `nextElected`: validator set of the `CurrentEra`.
 	//
 	// Substrate Reference:
 	// - Staking Pallet: https://crates.parity.io/pallet_staking/index.html
@@ -260,6 +261,7 @@ async function main() {
 	// - `Forcing`: https://crates.parity.io/pallet_staking/enum.Forcing.html
 	// - `EraElectionStatus`: https://crates.parity.io/pallet_staking/struct.EraElectionStatus.html
 	// - `Validators`: https://crates.parity.io/src/pallet_session/lib.rs.html#393
+	// - `CurrentEra`: https://crates.parity.io/pallet_staking/struct.CurrentEra.html
 	get('/staking', async (_) => {
 		const hash = await api.rpc.chain.getFinalizedHead();
 
