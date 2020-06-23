@@ -20,7 +20,7 @@ import { Struct } from '@polkadot/types';
 import { getSpecTypes } from '@polkadot/types-known';
 import { GenericCall } from '@polkadot/types/generic';
 import { EventData } from '@polkadot/types/generic/Event';
-import { DispatchInfo, EraIndex } from '@polkadot/types/interfaces';
+import { AccountId, DispatchInfo, EraIndex } from '@polkadot/types/interfaces';
 import { BlockHash } from '@polkadot/types/interfaces/chain';
 import { EventRecord } from '@polkadot/types/interfaces/system';
 import { u32 } from '@polkadot/types/primitive';
@@ -357,18 +357,28 @@ export default class ApiHandler {
 		const api = await this.ensureMeta(hash);
 
 		const [
+			currentEraOption,
 			validatorCount,
 			forceEra,
 			eraElectionStatus,
 			validators,
 			{ number },
 		] = await Promise.all([
+			await api.query.staking.currentEra.at(hash),
 			await api.query.staking.validatorCount.at(hash),
 			await api.query.staking.forceEra.at(hash),
 			await api.query.staking.eraElectionStatus.at(hash),
 			await api.query.session.validators.at(hash),
 			await api.rpc.chain.getHeader(hash),
 		]);
+
+		const currentEra = currentEraOption.unwrapOr(null);
+		// TODO comment nextElected logic
+		const nextElected = currentEra
+			? (await api.query.staking.erasStakers.keys(currentEra)).map(
+					(key) => key.args[1] as AccountId
+			  )
+			: null;
 
 		const {
 			eraLength,
@@ -426,6 +436,9 @@ export default class ApiHandler {
 			validatorSet: forceEra.isForceNone
 				? null
 				: validators.map((accountId) => accountId.toString()),
+			nextElected: forceEra.isForceNone
+				? null
+				: nextElected?.map((accountId) => accountId.toString()) ?? null,
 		};
 	}
 

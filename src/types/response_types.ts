@@ -18,4 +18,5 @@ export interface StakingInfo {
 		toggle: string | null;
 	};
 	validatorSet: string[] | null;
+	nextElected: string[] | null;
 }
