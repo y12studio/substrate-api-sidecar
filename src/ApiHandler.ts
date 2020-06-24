@@ -846,7 +846,7 @@ export default class ApiHandler {
 			).map((key) => key.args[1] as AccountId); // this never returns none, just an empty array
 		}
 
-		// TODO, how do we want to deal with historic querys older than depth
+		// TODO, how do we want to deal with historic queries older than depth
 		/**
 		 * The issue: AFAIK we can't do an equivalent call of api.query.staking.erasStakers.keys
 		 * at an older block
@@ -855,7 +855,9 @@ export default class ApiHandler {
 		 * We could find a hash for a block that exists in activeEra + 1
 		 * 	To do this we could add a full era worth of slots to the current block height
 		 * 	then query for that heights block hash and hope its in the correct era. The reason
-		 * 	I say hope is because I think the slots vs actual blocks diff could drift
+		 * 	I say hope is because I think the slots vs actual blocks diff could drift. Optimally
+		 * 	I think we would find the hash of the first block in activeEra + 1 since that would 
+		 * 	include validators that where elected but maybe got kicked out later on into the era.
 		 *
 		 * Then once we have the hash of the block in activeEra + 1, we could use it
 		 * to query `api.query.session.validators.at(hash)`, which would give us the
