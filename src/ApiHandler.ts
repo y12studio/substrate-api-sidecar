@@ -813,6 +813,14 @@ export default class ApiHandler {
 		};
 	}
 
+	/**
+	 * TODO fill description here
+	 *
+	 * @param api
+	 * @param hash
+	 * @param activeEra
+	 * @param historyDepth
+	 */
 	private async deriveElectedSet(
 		api: ApiPromise,
 		hash: BlockHash,
@@ -838,7 +846,15 @@ export default class ApiHandler {
 			).map((key) => key.args[1] as AccountId);
 		}
 
-		// TODO, deal with historical query
+		// TODO, how do we want to deal with historic querys older than depth
+		/**
+		 * The issue: AFAIK we can't do an equivalent call of api.query.staking.erasStakers.keys
+		 * at an older block
+		 *
+		 * Proposal:
+		 * We could find a hash for a block that exists in activeEra + 1
+		 * Then query either the validators directly at that block
+		 */
 
 		return null;
 	}
