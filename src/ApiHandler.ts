@@ -841,9 +841,9 @@ export default class ApiHandler {
 		if (isNotAPrunedEra) {
 			return (
 				await api.query.staking.erasStakers.keys(
-					activeEra.add(new BN(1)) // TODO make sure the assumption that activeEra + 1
+					activeEra.add(new BN(1))
 				)
-			).map((key) => key.args[1] as AccountId);
+			).map((key) => key.args[1] as AccountId); // this never returns none, just an empty array
 		}
 
 		// TODO, how do we want to deal with historic querys older than depth
@@ -855,7 +855,7 @@ export default class ApiHandler {
 		 * We could find a hash for a block that exists in activeEra + 1
 		 * 	To do this we could add a full era worth of slots to the current block height
 		 * 	then query for that heights block hash and hope its in the correct era
-		 * 
+		 *
 		 * Then query either the validators directly at that block
 		 */
 
