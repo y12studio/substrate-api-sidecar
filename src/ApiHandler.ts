@@ -854,9 +854,13 @@ export default class ApiHandler {
 		 * Proposal:
 		 * We could find a hash for a block that exists in activeEra + 1
 		 * 	To do this we could add a full era worth of slots to the current block height
-		 * 	then query for that heights block hash and hope its in the correct era
+		 * 	then query for that heights block hash and hope its in the correct era. The reason
+		 * 	I say hope is because I think the slots vs actual blocks diff could drift
 		 *
-		 * Then query either the validators directly at that block
+		 * Then once we have the hash of the block in activeEra + 1, we could use it
+		 * to query `api.query.session.validators.at(hash)`, which would give us the
+		 * next validator set, and fulfill this idea of "next elected" relative to
+		 * the era of the current block
 		 */
 
 		return null;
