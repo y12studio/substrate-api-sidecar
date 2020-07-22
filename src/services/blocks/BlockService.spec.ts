@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
+import { ApiPromise } from '@polkadot/api';
 import { GenericCall } from '@polkadot/types/generic';
+import { Hash } from '@polkadot/types/interfaces';
 
 import { createCall, kusamaRegistry } from '../../utils/testTools';
 import { BlocksService } from './BlocksService';
@@ -20,10 +22,54 @@ const transferOutput = {
 		value: 12,
 	},
 };
+
+/**
+ * Mock polkadot-js api.
+ */
+const api = {
+	query: {
+		transactionPayment: {
+			nextFeeMultiplier: {
+				at: (_parentHash: Hash) => Promise.resolve().then(() => 'TODO'),
+			},
+		},
+	},
+	consts: {
+		transactionPayment: {
+			transactionByteFee: 'TODO',
+			weightToFee: () => Promise.resolve().then(() => [{ todo: 'todo' }]),
+		},
+		system: { extrinsicBaseWeight: 'TODO' },
+	},
+	rpc: {
+		chain: {
+			getHeader: () =>
+				Promise.resolve().then(() => {
+					return {
+						parentHash: 'TODO',
+					};
+				}),
+		},
+		state: {
+			getRuntimeVersion: () =>
+				Promise.resolve().then(() => {
+					return {
+						todo: 'todo',
+					};
+				}),
+		},
+	},
+};
+
+const blocksService = new BlocksService((api as unknown) as ApiPromise);
+
 describe('BlocksService', () => {
 	describe('calcFee', () => {
-		test.todo('works');
+		it('works', () => {
+			console.log(blocksService);
+		});
 	});
+
 	describe('BlocksService.parseGenericCall', () => {
 		it('does not handle an empty object', () =>
 			expect(() =>
