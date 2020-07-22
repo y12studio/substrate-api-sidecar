@@ -143,11 +143,11 @@ export class BlocksService extends AbstractService {
 			};
 		}
 
-		const {
-			calcFee,
-			specName,
-			specVersion,
-		} = await this.calculatePartialFee(api, parentHash, block);
+		const { calcFee, specName, specVersion } = await this.createCalcFee(
+			api,
+			parentHash,
+			block
+		);
 
 		for (let idx = 0; idx < block.extrinsics.length; ++idx) {
 			if (!extrinsics[idx].paysFee || !block.extrinsics[idx].isSigned) {
@@ -235,13 +235,13 @@ export class BlocksService extends AbstractService {
 	}
 
 	/**
-	 * Calculate the partial fee
+	 * Create calcFee from params.
 	 *
 	 * @param api ApiPromise
 	 * @param parentHash Hash of the parent block
 	 * @param block Block which the extrinsic is from
 	 */
-	private async calculatePartialFee(
+	private async createCalcFee(
 		api: ApiPromise,
 		parentHash: Hash,
 		block: Block
