@@ -3,9 +3,11 @@ import { CalcFee } from '@polkadot/calc-fee';
 import { Struct } from '@polkadot/types';
 import { GenericCall } from '@polkadot/types';
 import {
+	Block,
 	BlockHash,
 	DispatchInfo,
 	EventRecord,
+	Hash,
 } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import { u8aToHex } from '@polkadot/util';
@@ -28,13 +30,6 @@ export class BlocksService extends AbstractService {
 		]);
 
 		const { parentHash, number, stateRoot, extrinsicsRoot } = block.header;
-		const parentParentHash = await (async function () {
-			if (block.header.number.toNumber() > 1) {
-				return (await api.rpc.chain.getHeader(parentHash)).parentHash;
-			} else {
-				return parentHash;
-			}
-		})();
 
 		const onInitialize = { events: [] as ISanitizedEvent[] };
 		const onFinalize = { events: [] as ISanitizedEvent[] };
@@ -148,36 +143,11 @@ export class BlocksService extends AbstractService {
 			};
 		}
 
-		const perByte = api.consts.transactionPayment.transactionByteFee;
-		const extrinsicBaseWeight = api.consts.system.extrinsicBaseWeight;
-		const multiplier = await api.query.transactionPayment.nextFeeMultiplier.at(
-			parentHash
-		);
-		// The block where the runtime is deployed falsely proclaims it would
-		// be already using the new runtime. This workaround therefore uses the
-		// parent of the parent in order to determine the correct runtime under which
-		// this block was produced.
-		const version = await api.rpc.state.getRuntimeVersion(parentParentHash);
-		const specName = version.specName.toString();
-		const specVersion = version.specVersion.toNumber();
-		const coefficients = api.consts.transactionPayment.weightToFee.map(
-			function (c) {
-				return {
-					coeffInteger: c.coeffInteger.toString(),
-					coeffFrac: c.coeffFrac,
-					degree: c.degree,
-					negative: c.negative,
-				};
-			}
-		);
-		const calcFee = CalcFee.from_params(
-			coefficients,
-			BigInt(extrinsicBaseWeight.toString()),
-			multiplier.toString(),
-			perByte.toString(),
+		const {
+			calcFee,
 			specName,
-			specVersion
-		);
+			specVersion,
+		} = await this.calculatePartialFee(api, parentHash, block);
 
 		for (let idx = 0; idx < block.extrinsics.length; ++idx) {
 			if (!extrinsics[idx].paysFee || !block.extrinsics[idx].isSigned) {
@@ -261,6 +231,63 @@ export class BlocksService extends AbstractService {
 			onInitialize,
 			extrinsics,
 			onFinalize,
+		};
+	}
+
+	/**
+	 * Calculate the partial fee
+	 *
+	 * @param api ApiPromise
+	 * @param parentHash Hash of the parent block
+	 * @param block Block which the extrinsic is from
+	 */
+	private async calculatePartialFee(
+		api: ApiPromise,
+		parentHash: Hash,
+		block: Block
+	) {
+		let parentParentHash: Hash;
+		if (block.header.number.toNumber() > 1) {
+			parentParentHash = (await api.rpc.chain.getHeader(parentHash))
+				.parentHash;
+		} else {
+			parentParentHash = parentHash;
+		}
+
+		const perByte = api.consts.transactionPayment.transactionByteFee;
+		const extrinsicBaseWeight = api.consts.system.extrinsicBaseWeight;
+		const multiplier = await api.query.transactionPayment.nextFeeMultiplier.at(
+			parentHash
+		);
+		// The block where the runtime is deployed falsely proclaims it would
+		// be already using the new runtime. This workaround therefore uses the
+		// parent of the parent in order to determine the correct runtime under which
+		// this block was produced.
+		const version = await api.rpc.state.getRuntimeVersion(parentParentHash);
+		const specName = version.specName.toString();
+		const specVersion = version.specVersion.toNumber();
+		const coefficients = api.consts.transactionPayment.weightToFee.map(
+			(c) => {
+				return {
+					coeffInteger: c.coeffInteger.toString(),
+					coeffFrac: c.coeffFrac,
+					degree: c.degree,
+					negative: c.negative,
+				};
+			}
+		);
+
+		return {
+			calcFee: CalcFee.from_params(
+				coefficients,
+				BigInt(extrinsicBaseWeight.toString()),
+				multiplier.toString(),
+				perByte.toString(),
+				specName,
+				specVersion
+			),
+			specName,
+			specVersion,
 		};
 	}
 
