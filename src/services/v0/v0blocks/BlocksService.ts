@@ -37,7 +37,9 @@ export class BlocksService extends AbstractService {
 	 * @param hash `BlockHash` of the block to fetch.
 	 */
 	async fetchBlock(hash: BlockHash): Promise<IBlock> {
-		const api = await this.ensureMeta(hash);
+		// const api = await this.ensureMeta(hash);
+		// Don't use ensureMeta because polkadot/api now has swapMetadata for historical
+		const api = this.api;
 		const [{ block }, events, headerDerive] = await Promise.all([
 			api.rpc.chain.getBlock(hash),
 			this.fetchEvents(api, hash),
