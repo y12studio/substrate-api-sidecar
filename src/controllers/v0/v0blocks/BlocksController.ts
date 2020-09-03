@@ -1,4 +1,4 @@
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 import { RequestHandler } from 'express';
 
 import { BlocksService } from '../../../services/v0';
@@ -59,8 +59,8 @@ import AbstractController from '../../AbstractController';
 export default class BlocksController extends AbstractController<
 	BlocksService
 > {
-	constructor(api: ApiPromise) {
-		super(api, '/block', new BlocksService(api));
+	constructor(api: ApiPromise, wsProvider: WsProvider) {
+		super(api, '/block', new BlocksService(api, wsProvider));
 		this.initRoutes();
 	}
 

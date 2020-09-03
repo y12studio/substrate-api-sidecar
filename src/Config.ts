@@ -11,6 +11,7 @@ export interface ISidecarConfig {
 	LOG_MODE: string;
 	WS_URL: string;
 	CUSTOM_TYPES: Record<string, string> | undefined;
+	RETRY_EVENTS: RetryEvents;
 }
 
 /**
@@ -30,6 +31,12 @@ export enum CONFIG {
 	PORT = 'PORT',
 	WS_URL = 'WS_URL',
 	CUSTOM_TYPES = 'CUSTOM_TYPES',
+	RETRY_EVENTS = 'RETRY_EVENTS',
+}
+
+export enum RetryEvents {
+	yes = 'yes',
+	no = 'no',
 }
 
 function hr(): string {
@@ -65,6 +72,10 @@ export default class Config {
 			PORT: config.Get(MODULES.EXPRESS, CONFIG.PORT) as number,
 			LOG_MODE: config.Get(MODULES.EXPRESS, CONFIG.LOG_MODE) as string,
 			WS_URL: config.Get(MODULES.SUBSTRATE, CONFIG.WS_URL) as string,
+			RETRY_EVENTS: config.Get(
+				MODULES.SUBSTRATE,
+				CONFIG.RETRY_EVENTS
+			) as RetryEvents,
 			CUSTOM_TYPES: configTypes[CONFIG.CUSTOM_TYPES],
 		};
 	}

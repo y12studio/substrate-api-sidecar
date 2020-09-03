@@ -22,3 +22,8 @@ SAS:
       default: ws://127.0.0.1:9944
       mandatory: true
       regexp: ^wss?:\/\/.*(:\d{4,5})?$
+    RETRY_EVENTS:
+      description: Reconnect websocket when events query fails
+      default: 'no'
+      mandatory: false
+      regexp: ^yes|no$

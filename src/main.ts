@@ -35,8 +35,9 @@ async function main() {
 	const config: ISidecarConfig = configOrNull;
 
 	// Instantiate a web socket connection to the node for basic polkadot-js use
+	const wsProvider = new WsProvider(config.WS_URL);
 	const api = await ApiPromise.create({
-		provider: new WsProvider(config.WS_URL),
+		provider: wsProvider,
 		types: {
 			...config.CUSTOM_TYPES,
 		},
@@ -71,7 +72,7 @@ async function main() {
 	const vestingController = new controllers.v0.v0AccountsVestingInfo(api);
 	const balancesController = new controllers.v0.v0AccountsBalanceInfo(api);
 	const stakingInfoController = new controllers.v0.v0AccountsStakingInfo(api);
-	const v0blocksController = new controllers.v0.v0Blocks(api);
+	const v0blocksController = new controllers.v0.v0Blocks(api, wsProvider);
 	const stakingController = new controllers.v0.v0PalletsStakingProgress(api);
 	const metadataController = new controllers.v0.v0Metadata(api);
 

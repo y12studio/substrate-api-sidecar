@@ -1,4 +1,4 @@
-import { ApiPromise } from '@polkadot/api';
+import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Struct } from '@polkadot/types';
 import { GenericCall } from '@polkadot/types';
 import {
@@ -32,7 +32,14 @@ enum Event {
 	failure = 'system.ExtrinsicFailed',
 }
 
+import Config, { ISidecarConfig, RetryEvents } from '../../../Config';
+
+const { RETRY_EVENTS } = Config.GetConfig() as ISidecarConfig;
+
 export class BlocksService extends AbstractService {
+	constructor(api: ApiPromise, private wsProvider: WsProvider) {
+		super(api);
+	}
 	/**
 	 * Fetch a block enhanced with augmented and derived values.
 	 *
@@ -47,26 +54,17 @@ export class BlocksService extends AbstractService {
 		let validators;
 
 		if (noAuthor) {
-			const [{ block: blockRes }, eventsRes] = await Promise.all([
-				api.rpc.chain.getBlock(hash),
-				this.fetchEvents(api, hash),
-			]);
-			block = blockRes;
-			events = eventsRes;
+			block = (await api.rpc.chain.getBlock(hash)).block;
+			events = await this.fetchEvents(api, hash);
 		} else {
-			const [
-				{ block: blockRes },
-				eventsRes,
-				validatorsRes,
-			] = await Promise.all([
+			const [{ block: blockRes }, validatorsRes] = await Promise.all([
 				api.rpc.chain.getBlock(hash),
-				this.fetchEvents(api, hash),
 				api.query.session.validators.at(hash),
 			]);
 
 			block = blockRes;
-			events = eventsRes;
 			validators = validatorsRes;
+			events = await this.fetchEvents(api, hash);
 		}
 
 		const {
@@ -378,6 +376,22 @@ export class BlocksService extends AbstractService {
 		try {
 			return await api.query.system.events.at(hash);
 		} catch {
+			if (RETRY_EVENTS === RetryEvents.yes) {
+				console.error(
+					`Attempting to reconnect with WsProvider BlockHash: ${hash.toString()}`
+				);
+				this.wsProvider.disconnect();
+
+				// 1 second delay before recconecting
+				await new Promise((resolve) => setTimeout(resolve, 1 * 1000));
+
+				await this.wsProvider.connect();
+				console.error(
+					`Reconnection to WsProvider succesful. BlockHash: ${hash.toString()}`
+				);
+
+				return await api.query.system.events.at(hash);
+			}
 			return 'Unable to fetch Events, cannot confirm extrinsic status. Check pruning settings on the node.';
 		}
 	}
