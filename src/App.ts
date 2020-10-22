@@ -40,6 +40,12 @@ export default class App {
 		this.host = host;
 
 		this.initMiddleware(preMiddleware);
+		// setting openapi dist
+		// yarn start
+		// http://localhost:8080/docs/
+
+		// _dirname = build/src/
+		this.app.use('/docs',express.static(__dirname + '/../../docs/dist'));
 		this.initControllers(controllers);
 		this.initRoot();
 		this.initErrorMiddleware(postMiddleware);
@@ -82,7 +88,9 @@ export default class App {
 
 	listen(): void {
 		this.app.listen(this.port, this.host, () => {
+			// console.log(`__dirname: ${__dirname}/`);
 			console.log(`Listening on http://${this.host}:${this.port}/`);
+			console.log(`OpenAPI Swagger-UI on http://${this.host}:${this.port}/docs/`);
 		});
 	}
 
